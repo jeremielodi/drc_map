@@ -535,7 +535,7 @@ L.tileLayer(
     Load Provinces
     ------------------------------ */
 
-    fetch('/api/provinces')
+    fetch('./api/provinces')
 
       .then(res => {
         if (!res.ok) throw new Error("Erreur chargement provinces");
@@ -565,7 +565,7 @@ L.tileLayer(
     Load Health Zones
     ------------------------------ */
 
-    fetch('/api/health_zones')
+    fetch('./api/health_zones')
 
       .then(res => {
         if (!res.ok) throw new Error("Erreur chargement zones");
