@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carte des provinces de la RDC</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/styles.css" />
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body>
+
+  <header class="page-header">
+    <div>
+      <h1>Carte de la RDC</h1>
+    </div>
+    <div class="legend-pill">26 provinces</div>
+  </header>
+
+  <main class="layout">
+
+    <aside class="sidebar">
+
+      <h2>Province</h2>
+
+      <div id="province-info" class="province-card">
+        <strong>Sélection</strong>
+        <p>Survole ou clique sur une province pour voir son nom.</p>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0">Filtre Provinces</h3>
+
+        <button id="clear-province-filter" style="font-size:12px">
+          Clear
+        </button>
+      </div>
+
+      <select id="province-filter" multiple size="8" style="width:100%; margin-top:6px">
+      </select>
+
+      <hr />
+
+      <h3>Layers</h3>
+
+      <label>
+        <input type="checkbox" id="toggle-provinces" checked>
+        Afficher Provinces
+      </label>
+
+      <br>
+
+      <label>
+        <input type="checkbox" id="toggle-zones" checked>
+        Afficher Zones de santé
+      </label>
+
+      <br />  <br />
+      <h3>Légende</h3>
+
+      <ul class="legend">
+        <li>
+          🚚
+          Distribution
+        </li>
+        <li>
+          🚨
+          Incident
+        </li>
+        <li>
+          🚧
+          Construction
+        </li>
+        <li>
+          🎓
+          École
+        </li>
+        <li>
+          🏥
+          Centre de Santé
+        </li>
+        <li>
+          ⚖️
+          Bâtiment Administratif
+        </li>
+        <li>
+          📌
+          Autre
+        </li>
+      </ul>
+
+
+    </aside>
+
+    <section class="map-wrapper">
+      <div id="map"></div>
+    </section>
+
+  </main>
+
+  <script>
+
+
+    const projectData = [
+      {
+        type: "distribution",
+        name: "Distribution moustiquaires",
+        lat: -2.51,
+        lng: 28.86,
+        zone: "Bukavu"
+      },
+
+      {
+        type: "incident",
+        name: "Incident logistique",
+        lat: -2.52,
+        lng: 28.87,
+        zone: "Bukavu"
+      },
+
+      {
+        type: "construction",
+        name: "Construction centre santé",
+        lat: -2.53,
+        lng: 28.88,
+        zone: "Bukavu"
+      },
+
+      {
+        type: "distribution",
+        name: "Distribution vivres",
+        lat: -4.32,
+        lng: 15.31,
+        zone: "Kinshasa"
+      },
+
+      {
+        type: "incident",
+        name: "Incident sécurité",
+        lat: -4.34,
+        lng: 15.30,
+        zone: "Kinshasa"
+      },
+
+      {
+        type: "construction",
+        name: "Construction école",
+        lat: -4.35,
+        lng: 15.33,
+        zone: "Kinshasa"
+      }
+    ];
+    const infoBox = document.getElementById('province-info');
+
+    const map = L.map("map").setView([-4, 22], 5);
+
+   
+    const osm = L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+    );
+
+    const satellite = 
+L.tileLayer(
+'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+);
+    
+    osm.addTo(map);
+
+    L.control.layers({
+  "OpenStreetMap": osm,
+  "Topo Map": satellite
+}).addTo(map);
+    /* ------------------------------
+    Layers
+    ------------------------------ */
+
+    const provinceLayer = L.layerGroup().addTo(map);
+    const zoneLayer = L.layerGroup().addTo(map);
+    const zoneLabelLayer = L.layerGroup().addTo(map);
+    const projectLayer = L.layerGroup().addTo(map);
+    const provinceLabelLayer = L.layerGroup().addTo(map);
+    /* ------------------------------
+    Helpers
+    ------------------------------ */
+
+    function getProvinceName(feature) {
+      return (
+        feature.properties?.name ||
+        feature.properties?.NAME_1 ||
+        feature.properties?.province ||
+        feature.properties?.nom ||
+        feature.properties?.ADM1_EN ||
+        'Province inconnue'
+      );
+    }
+
+    function getZoneName(feature) {
+      return (
+        feature.properties?.name ||
+        feature.properties?.Nom ||
+        feature.properties?.zone ||
+        feature.properties?.ADM2_EN ||
+        "Zone de santé"
+      );
+    }
+
+    function colorFromName(name) {
+
+      let hash = 0;
+
+      for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      }
+
+      const hue = Math.abs(hash) % 360;
+
+      return `hsl(${hue},70%,55%)`;
+
+    }
+
+
+    /* ------------------------------
+    Styles
+    ------------------------------ */
+
+
+    function loadProjectData() {
+
+      projectData.forEach(p => {
+
+        const style = getMarkerStyle(p.type);
+
+        const marker = L.marker([p.lat, p.lng], {
+
+          icon: L.divIcon({
+
+            className: "project-marker",
+
+            html: `<span style="color:${style.color};font-size:18px">${style.icon}</span>`
+
+          })
+
+        });
+
+        marker.bindPopup(`
+        <strong>${p.name}</strong><br>
+        Type: ${p.type}<br>
+        Zone: ${p.zone}
+        `);
+
+        projectLayer.addLayer(marker);
+
+      });
+
+    }
+    function provinceStyle(feature) {
+      return {
+        color: "#1e293b",
+        weight: 3,
+        fillColor: colorFromName(getProvinceName(feature)),
+        fillOpacity: 0.25
+      };
+    }
+
+    function zoneStyle(feature) {
+      return {
+        color: "#065f46",
+        weight: 1.2,
+        fill: false,
+        fillOpacity: 0
+      };
+    }
+
+
+    /* ------------------------------
+    UI Update
+    ------------------------------ */
+
+    function updateInfo(name, extra = '', zones = []) {
+
+      let html = `<strong>${name}</strong>
+<p>${extra || 'Province de la République Démocratique du Congo.'}</p>`;
+
+      if (zones.length) {
+
+        html += `<h4>Zones de santé (${zones.length})</h4><ul>`;
+
+        zones.forEach(z => {
+          html += `<li>${z}</li>`;
+        });
+
+        html += `</ul>`;
+      }
+
+      infoBox.innerHTML = html;
+
+    }
+
+
+    /* ------------------------------
+    Zones data
+    ------------------------------ */
+
+    let zonesData = null;
+
+    function getZonesByProvince(province) {
+
+      if (!zonesData) return [];
+
+      return zonesData.features
+        .filter(f => {
+
+          const p =
+            f.properties?.province ||
+            f.properties?.Province ||
+            f.properties?.ADM1_EN ||
+            f.properties?.province_name;
+
+          return p === province;
+
+        })
+        .map(f => getZoneName(f));
+
+    }
+
+    function populateProvinceFilter(data) {
+
+      const select = document.getElementById("province-filter");
+
+      document
+        .getElementById("province-filter")
+        .addEventListener("change", filterProvinces);
+
+      document
+        .getElementById("clear-province-filter")
+        .addEventListener("click", function () {
+
+          const select = document.getElementById("province-filter");
+
+          Array.from(select.options).forEach(o => o.selected = false);
+
+          filterProvinces();
+
+        });
+      data.features.forEach(feature => {
+
+        const name = getProvinceName(feature);
+
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+
+        select.appendChild(option);
+
+      });
+
+    }
+    /* ------------------------------
+    Show zone labels on map
+    ------------------------------ */
+
+    function showZoneLabels(provinceName) {
+
+      zoneLabelLayer.clearLayers();
+
+      if (!zonesData) return;
+
+      zonesData.features.forEach(feature => {
+
+        const province =
+          feature.properties?.province ||
+          feature.properties?.ADM1_EN ||
+          feature.properties?.Province;
+
+        if (province !== provinceName) return;
+
+        const name = getZoneName(feature);
+
+        const layer = L.geoJSON(feature);
+
+        const center = layer.getBounds().getCenter();
+
+        const label = L.marker(center, {
+          icon: L.divIcon({
+            className: "zone-label",
+            html: name,
+            iconSize: [120, 20]
+          }),
+          interactive: false
+        });
+
+        zoneLabelLayer.addLayer(label);
+
+      });
+
+    }
+
+
+    /* ------------------------------
+    Highlight Province
+    ------------------------------ */
+
+    let provincesGeoJSON;
+
+    function highlightFeature(e) {
+
+      const layer = e.target;
+      const name = getProvinceName(layer.feature);
+
+      layer.setStyle({
+        weight: 4,
+        color: '#0f172a',
+        fillOpacity: 0.6
+      });
+
+      layer.bringToFront();
+
+      updateInfo(name, "Clique pour zoomer sur cette province.");
+
+    }
+
+    function resetHighlight(e) {
+
+      provincesGeoJSON.resetStyle(e.target);
+
+      updateInfo(
+        'Sélection',
+        'Survole ou clique sur une province pour voir son nom.'
+      );
+
+    }
+
+    function getMarkerStyle(type) {
+      switch (type) {
+        case "DISTRIBUTION":
+          return { color: "#2563eb", icon: "🚚" };  // Delivery truck
+
+        case "INCIDENT":
+          return { color: "#dc2626", icon: "🚨" };  // Police/emergency light
+
+        case "CONSTRUCTION":
+          return { color: "#16a34a", icon: "🚧" };  // Construction barrier
+
+        case "ECOLE":
+          return { color: "#9333ea", icon: "🎓" };  // Graduation cap
+
+        case "CENTRE DE SANTE":
+          return { color: "#f59e0b", icon: "🏥" };  // Hospital (kept as is)
+
+        case "BATIMENT ADMINISTRATIF":
+          return { color: "#0891b2", icon: "⚖️" };  // Scales of justice / government
+
+        default:
+          return { color: "#333", icon: "📌" };  // Push pin
+      }
+    }
+
+    function zoomToFeature(e) {
+
+      const layer = e.target;
+      const provinceName = getProvinceName(layer.feature);
+
+      map.fitBounds(layer.getBounds(), { padding: [20, 20] });
+
+      const zones = getZonesByProvince(provinceName);
+
+      updateInfo(
+        provinceName,
+        `Nombre de zones : ${zones.length}`,
+        zones
+      );
+
+      showZoneLabels(provinceName);
+
+    }
+
+
+    /* ------------------------------
+    Province Feature
+    ------------------------------ */
+
+    function onEachProvince(feature, layer) {
+
+      const name = getProvinceName(feature);
+
+      layer.bindPopup(`<strong>${name}</strong>`);
+
+      layer.on({
+        mouseover: highlightFeature,
+        mouseout: resetHighlight,
+        click: zoomToFeature
+      });
+
+      const center = layer.getBounds().getCenter();
+
+      const label = L.marker(center, {
+        icon: L.divIcon({
+          className: "province-label",
+          html: name,
+          iconSize: [100, 20]
+        }),
+        interactive: false
+      });
+
+      provinceLabelLayer.addLayer(label);
+
+    }
+
+
+    function filterProvinces() {
+
+      const select = document.getElementById("province-filter");
+
+      const selected = Array.from(select.selectedOptions)
+        .map(o => o.value);
+
+      provinceLayer.clearLayers();
+
+      provincesGeoJSON.eachLayer(layer => {
+
+        const name = getProvinceName(layer.feature);
+
+        if (selected.length === 0 || selected.includes(name)) {
+          provinceLayer.addLayer(layer);
+        }
+
+      });
+
+    }
+    /* ------------------------------
+    Load Provinces
+    ------------------------------ */
+
+    fetch('/api/provinces')
+
+      .then(res => {
+        if (!res.ok) throw new Error("Erreur chargement provinces");
+        return res.json();
+      })
+
+      .then(data => {
+
+        provincesGeoJSON = L.geoJSON(data, {
+          style: provinceStyle,
+          onEachFeature: onEachProvince
+        });
+        populateProvinceFilter(data);
+        provinceLayer.addLayer(provincesGeoJSON);
+
+        map.fitBounds(provincesGeoJSON.getBounds(), { padding: [10, 10] });
+
+      })
+
+      .catch(err => {
+        console.error(err);
+        updateInfo("Erreur", "Impossible de charger les provinces.");
+      });
+
+
+    /* ------------------------------
+    Load Health Zones
+    ------------------------------ */
+
+    fetch('/api/health_zones')
+
+      .then(res => {
+        if (!res.ok) throw new Error("Erreur chargement zones");
+        return res.json();
+      })
+
+      .then(data => {
+
+        zonesData = data;
+
+        const zones = L.geoJSON(data, {
+          style: zoneStyle,
+          onEachFeature: (feature, layer) => {
+            layer.bindPopup(`<strong>${getZoneName(feature)}</strong>`);
+          }
+        });
+
+        zoneLayer.addLayer(zones);
+
+      })
+
+      .catch(err => {
+        console.error(err);
+      });
+
+
+    /* ------------------------------
+    Sidebar Layer Toggle
+    ------------------------------ */
+
+    document.getElementById("toggle-provinces")
+      .addEventListener("change", function () {
+
+        if (this.checked) {
+          map.addLayer(provinceLayer);
+        } else {
+          map.removeLayer(provinceLayer);
+        }
+
+      });
+
+    document.getElementById("toggle-zones")
+      .addEventListener("change", function () {
+
+        if (this.checked) {
+          map.addLayer(zoneLayer);
+        } else {
+          map.removeLayer(zoneLayer);
+        }
+
+      });
+
+
+    map.on("zoomend", () => {
+      provinceLabelLayer.remove();
+      provinceLabelLayer.addTo(map)
+
+    });
+
+    // loadProjectData();
+
+
+    fetch("/api/ouvrages")
+      .then(res => res.json())
+      .then(data => {
+
+        data.forEach(p => {
+          const style = getMarkerStyle(p.typeOuvrage);
+
+          const marker = L.marker([p.latitude, p.longitude], {
+
+            icon: L.divIcon({
+
+              className: "project-marker",
+
+              html: `<span style="color:${style.color};font-size:18px">${style.icon}</span>`
+
+            })
+
+          });
+
+          marker.bindPopup(`
+        <strong>${p.site}</strong><br>
+        Type: ${p.typeOuvrage}<br>
+        Province: ${p.province}
+        `);
+
+          projectLayer.addLayer(marker);
+
+        });
+
+      });
+    /* ------------------------------
+    Layer Order
+    ------------------------------ */
+
+    // zoneLayer.bringToFront();
+    // provinceLayer.bringToBack();
+
+  </script>
+
+</body>
+
+</html>
