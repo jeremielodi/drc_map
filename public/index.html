@@ -6,14 +6,334 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carte des provinces de la RDC</title>
 
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="/styles.css" />
 
+  <!-- Leaflet JavaScript -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    /* Styles supplémentaires */
+    .layout {
+      display: grid;
+      grid-template-columns: 300px 1fr 300px;
+      height: 100vh;
+      gap: 10px;
+      padding: 10px;
+    }
+
+    .sidebar {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+    }
+
+    .sidebar-right {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+    }
+
+    .map-wrapper {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+
+    /* Styles pour la légende filtrable */
+    .legend {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      margin-bottom: 5px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .legend-item:hover {
+      background-color: #f7fafc;
+    }
+
+    .legend-item.active {
+      background-color: #ebf8ff;
+      border-color: #4299e1;
+    }
+
+    .legend-item.disabled {
+      opacity: 0.4;
+      background-color: #f1f5f9;
+      cursor: not-allowed;
+    }
+
+    .legend-icon {
+      font-size: 18px;
+      margin-right: 10px;
+      width: 24px;
+      text-align: center;
+    }
+
+    .legend-label {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .legend-count {
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #4a5568;
+    }
+
+    .legend-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .legend-actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    .legend-btn {
+      padding: 4px 8px;
+      font-size: 11px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .legend-btn:hover {
+      background: #f7fafc;
+    }
+
+    /* Styles pour les détails de l'ouvrage */
+    .ouvrage-detail-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 20px;
+      background: #f8fafc;
+    }
+
+    .ouvrage-detail-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .ouvrage-detail-icon {
+      font-size: 32px;
+    }
+
+    .ouvrage-detail-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .ouvrage-detail-section {
+      margin-bottom: 20px;
+    }
+
+    .ouvrage-detail-section-title {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .ouvrage-detail-row {
+      display: flex;
+      margin-bottom: 12px;
+      padding: 8px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .ouvrage-detail-label {
+      width: 120px;
+      font-weight: 500;
+      color: #475569;
+    }
+
+    .ouvrage-detail-value {
+      flex: 1;
+      color: #0f172a;
+    }
+
+    .ouvrage-detail-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .badge-success {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .badge-warning {
+      background: #feebc8;
+      color: #744210;
+    }
+
+    .badge-danger {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .badge-info {
+      background: #bee3f8;
+      color: #2c5282;
+    }
+
+    .badge-en-cours {
+      background: #fefcbf;
+      color: #744210;
+    }
+
+    .badge-termine {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .badge-planifie {
+      background: #e9d8fd;
+      color: #553c9a;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #4299e1;
+      border-radius: 4px;
+    }
+
+    .coordinates {
+      font-family: monospace;
+      background: #f1f5f9;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .no-selection {
+      text-align: center;
+      color: #94a3b8;
+      padding: 40px 20px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 2px dashed #cbd5e1;
+    }
+
+    .no-selection-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+
+    .documents-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .documents-list li {
+      padding: 8px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .contact-item {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+
+    .contact-name {
+      font-weight: 600;
+      color: #2d3748;
+    }
+
+    .contact-role {
+      font-size: 12px;
+      color: #718096;
+    }
+
+    /* Stats rapides */
+    .quick-stats {
+      background: #f8fafc;
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 12px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      color: #64748b;
+    }
+
+    .stat-value {
+      font-weight: 600;
+      color: #2d3748;
+    }
+  </style>
 </head>
 
 <body>
-
   <header class="page-header">
     <div>
       <h1>Carte de la RDC</h1>
@@ -22,9 +342,8 @@
   </header>
 
   <main class="layout">
-
+    <!-- Sidebar Gauche - Provinces et filtres -->
     <aside class="sidebar">
-
       <h2>Province</h2>
 
       <div id="province-info" class="province-card">
@@ -34,159 +353,163 @@
 
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h3 style="margin:0">Filtre Provinces</h3>
-
-        <button id="clear-province-filter" style="font-size:12px">
-          Clear
-        </button>
+        <button id="clear-province-filter" style="font-size:12px">Clear</button>
       </div>
 
-      <select id="province-filter" multiple size="8" style="width:100%; margin-top:6px">
-      </select>
+      <select id="province-filter" multiple size="8" style="width:100%; margin-top:6px"></select>
 
       <hr />
 
       <h3>Layers</h3>
-
       <label>
         <input type="checkbox" id="toggle-provinces" checked>
         Afficher Provinces
       </label>
-
       <br>
-
       <label>
         <input type="checkbox" id="toggle-zones" checked>
         Afficher Zones de santé
       </label>
 
-      <br />  <br />
-      <h3>Légende</h3>
+      <br /><br />
 
-      <ul class="legend">
-        <li>
-          🚚
-          Distribution
-        </li>
-        <li>
-          🚨
-          Incident
-        </li>
-        <li>
-          🚧
-          Construction
-        </li>
-        <li>
-          🎓
-          École
-        </li>
-        <li>
-          🏥
-          Centre de Santé
-        </li>
-        <li>
-          ⚖️
-          Bâtiment Administratif
-        </li>
-        <li>
-          📌
-          Autre
-        </li>
+      <h3>Filtre par type d'ouvrage</h3>
+
+      <!-- Légende filtrable -->
+      <div class="legend-header">
+        <span>Légende</span>
+        <div class="legend-actions">
+          <button id="select-all-types" class="legend-btn">Tous</button>
+          <button id="clear-all-types" class="legend-btn">Aucun</button>
+        </div>
+      </div>
+
+      <ul class="legend" id="type-legend">
+        <!-- Les éléments seront ajoutés dynamiquement par JavaScript -->
       </ul>
 
-
+      <!-- Stats rapides -->
+      <div id="quick-stats" class="quick-stats">
+        <div class="stat-row">
+          <span class="stat-label">Total ouvrages:</span>
+          <span class="stat-value" id="total-ouvrages">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Affichés:</span>
+          <span class="stat-value" id="affiches-ouvrages">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Masqués:</span>
+          <span class="stat-value" id="masques-ouvrages">0</span>
+        </div>
+      </div>
     </aside>
 
+    <!-- Map Section -->
     <section class="map-wrapper">
       <div id="map"></div>
     </section>
 
+    <!-- Sidebar Droite - Détails de l'ouvrage sélectionné -->
+    <aside class="sidebar-right">
+      <h2>📋 Détails de l'ouvrage</h2>
+
+      <!-- Conteneur des détails -->
+      <div id="ouvrage-details-container">
+        <div class="no-selection">
+          <div class="no-selection-icon">👆</div>
+          <div class="no-selection-text">Aucun ouvrage sélectionné</div>
+          <div class="no-selection-subtext">Cliquez sur un marqueur sur la carte pour voir ses détails</div>
+        </div>
+      </div>
+    </aside>
   </main>
 
   <script>
 
-
-    const projectData = [
-      {
-        type: "distribution",
-        name: "Distribution moustiquaires",
-        lat: -2.51,
-        lng: 28.86,
-        zone: "Bukavu"
-      },
-
-      {
-        type: "incident",
-        name: "Incident logistique",
-        lat: -2.52,
-        lng: 28.87,
-        zone: "Bukavu"
-      },
-
-      {
-        type: "construction",
-        name: "Construction centre santé",
-        lat: -2.53,
-        lng: 28.88,
-        zone: "Bukavu"
-      },
-
-      {
-        type: "distribution",
-        name: "Distribution vivres",
-        lat: -4.32,
-        lng: 15.31,
-        zone: "Kinshasa"
-      },
-
-      {
-        type: "incident",
-        name: "Incident sécurité",
-        lat: -4.34,
-        lng: 15.30,
-        zone: "Kinshasa"
-      },
-
-      {
-        type: "construction",
-        name: "Construction école",
-        lat: -4.35,
-        lng: 15.33,
-        zone: "Kinshasa"
-      }
-    ];
+    // ============================================
+    // INITIALISATION DE LA CARTE
+    // ============================================
+    const map = L.map("map").setView([-4, 22], 5);
     const infoBox = document.getElementById('province-info');
 
-    const map = L.map("map").setView([-4, 22], 5);
+    // ============================================
+    // FONDS DE CARTE (BASEMAPS)
+    // ============================================
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    });
 
-   
-    const osm = L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-    );
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri'
+    });
 
-    const satellite = 
-L.tileLayer(
-'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-);
-    
+    const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data: &copy; OpenTopoMap'
+    });
+
+    const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; Carto'
+    });
+
+    const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; Carto'
+    });
+
+    // Ajout du fond par défaut
     osm.addTo(map);
 
-    L.control.layers({
-  "OpenStreetMap": osm,
-  "Topo Map": satellite
-}).addTo(map);
-    /* ------------------------------
-    Layers
-    ------------------------------ */
+    // ============================================
+    // CONTRÔLE DES COUCHES
+    // ============================================
+    const baseMaps = {
+      "OpenStreetMap": osm,
+      "Satellite (Esri)": satellite,
+      "Topographic": topo,
+      "Carto Light": cartoLight,
+      "Carto Dark": cartoDark,
+    };
 
+    L.control.layers(baseMaps).addTo(map);
+
+    // ============================================
+    // COUCHES PRINCIPALES
+    // ============================================
     const provinceLayer = L.layerGroup().addTo(map);
     const zoneLayer = L.layerGroup().addTo(map);
     const zoneLabelLayer = L.layerGroup().addTo(map);
     const projectLayer = L.layerGroup().addTo(map);
     const provinceLabelLayer = L.layerGroup().addTo(map);
-    /* ------------------------------
-    Helpers
-    ------------------------------ */
 
+    // Variable pour stocker les données des zones
+    let zonesData = null;
+    let provincesGeoJSON;
+
+    // Variable pour stocker tous les ouvrages et leurs marqueurs
+    let allOuvrages = [];
+    let selectedOuvrage = null;
+    let markersMap = new Map(); // Pour stocker la correspondance entre ouvrages et marqueurs
+
+    // Types d'ouvrages pour la légende
+    const typeConfig = {
+      "DISTRIBUTION": { icon: "🚚", color: "#2563eb", label: "Distribution" },
+      "INCIDENT": { icon: "🚨", color: "#dc2626", label: "Incident" },
+      "CONSTRUCTION": { icon: "🚧", color: "#16a34a", label: "Construction" },
+      "ECOLE": { icon: "🎓", color: "#9333ea", label: "École" },
+      "CENTRE DE SANTE": { icon: "🏥", color: "#f59e0b", label: "Centre de Santé" },
+      "BATIMENT ADMINISTRATIF": { icon: "⚖️", color: "#0891b2", label: "Bâtiment Administratif" }
+    };
+
+    // État des filtres par type (tous actifs par défaut)
+    let activeTypes = new Set(Object.keys(typeConfig));
+
+    // ============================================
+    // FONCTIONS UTILITAIRES
+    // ============================================
+
+    /**
+     * Récupère le nom d'une province depuis ses propriétés
+     */
     function getProvinceName(feature) {
       return (
         feature.properties?.name ||
@@ -198,6 +521,9 @@ L.tileLayer(
       );
     }
 
+    /**
+     * Récupère le nom d'une zone de santé depuis ses propriétés
+     */
     function getZoneName(feature) {
       return (
         feature.properties?.name ||
@@ -208,55 +534,419 @@ L.tileLayer(
       );
     }
 
+    /**
+     * Génère une couleur unique basée sur le nom
+     */
     function colorFromName(name) {
-
       let hash = 0;
-
       for (let i = 0; i < name.length; i++) {
         hash = name.charCodeAt(i) + ((hash << 5) - hash);
       }
-
       const hue = Math.abs(hash) % 360;
-
       return `hsl(${hue},70%,55%)`;
-
     }
 
+    /**
+     * Définit le style des marqueurs selon le type
+     */
+    function getMarkerStyle(type) {
+      const typeUpper = type?.toUpperCase() || "";
+      return typeConfig[typeUpper] || { color: "#333", icon: "📌", label: "Autre" };
+    }
 
-    /* ------------------------------
-    Styles
-    ------------------------------ */
+    /**
+     * Met à jour l'affichage des marqueurs selon les filtres
+     */
+    function updateMarkersVisibility() {
+      projectLayer.clearLayers();
 
+      let compteurAffiches = 0;
 
-    function loadProjectData() {
-
-      projectData.forEach(p => {
-
-        const style = getMarkerStyle(p.type);
-
-        const marker = L.marker([p.lat, p.lng], {
-
-          icon: L.divIcon({
-
-            className: "project-marker",
-
-            html: `<span style="color:${style.color};font-size:18px">${style.icon}</span>`
-
-          })
-
-        });
-
-        marker.bindPopup(`
-        <strong>${p.name}</strong><br>
-        Type: ${p.type}<br>
-        Zone: ${p.zone}
-        `);
-
-        projectLayer.addLayer(marker);
-
+      allOuvrages.forEach(ouvrage => {
+        const typeUpper = ouvrage.type?.toUpperCase() || "";
+        if (activeTypes.has(typeUpper)) {
+          const marker = markersMap.get(ouvrage.id);
+          if (marker) {
+            projectLayer.addLayer(marker);
+            compteurAffiches++;
+          }
+        }
       });
 
+      // Mettre à jour les compteurs
+      document.getElementById('total-ouvrages').textContent = allOuvrages.length;
+      document.getElementById('affiches-ouvrages').textContent = compteurAffiches;
+      document.getElementById('masques-ouvrages').textContent = allOuvrages.length - compteurAffiches;
+
+      // Mettre à jour l'apparence de la légende
+      updateLegendAppearance();
     }
+
+    /**
+     * Met à jour l'apparence des éléments de la légende
+     */
+    function updateLegendAppearance() {
+      document.querySelectorAll('.legend-item').forEach(item => {
+        const type = item.dataset.type;
+        if (activeTypes.has(type)) {
+          item.classList.add('active');
+          item.classList.remove('disabled');
+        } else {
+          item.classList.remove('active');
+          item.classList.add('disabled');
+        }
+      });
+    }
+
+    /**
+     * Active/désactive un type dans le filtre
+     */
+    function toggleType(type) {
+      if (activeTypes.has(type)) {
+        activeTypes.delete(type);
+      } else {
+        activeTypes.add(type);
+      }
+      updateMarkersVisibility();
+    }
+
+    /**
+     * Active tous les types
+     */
+    function selectAllTypes() {
+      activeTypes = new Set(Object.keys(typeConfig));
+      updateMarkersVisibility();
+    }
+
+    /**
+     * Désactive tous les types
+     */
+    function clearAllTypes() {
+      activeTypes.clear();
+      updateMarkersVisibility();
+    }
+
+    /**
+     * Construit la légende filtrable
+     */
+    function buildLegend() {
+      const legend = document.getElementById('type-legend');
+      legend.innerHTML = '';
+
+      // Compter les occurrences par type
+      const typeCount = {};
+      allOuvrages.forEach(ouvrage => {
+        const type = ouvrage.type?.toUpperCase() || "AUTRE";
+        typeCount[type] = (typeCount[type] || 0) + 1;
+      });
+
+      // Ajouter les éléments de légende
+      Object.entries(typeConfig).forEach(([type, config]) => {
+        const count = typeCount[type] || 0;
+        const li = document.createElement('li');
+        li.className = `legend-item active`;
+        li.dataset.type = type;
+        li.innerHTML = `
+          <span class="legend-icon" style="color: ${config.color}">${config.icon}</span>
+          <span class="legend-label">${config.label}</span>
+          <span class="legend-count">${count}</span>
+        `;
+        li.addEventListener('click', () => toggleType(type));
+        legend.appendChild(li);
+      });
+    }
+
+    /**
+     * Récupère les zones de santé d'une province
+     */
+    function getZonesByProvince(province) {
+      if (!zonesData) return [];
+
+      return zonesData.features
+        .filter(f => {
+          const p = f.properties?.province ||
+            f.properties?.Province ||
+            f.properties?.ADM1_EN ||
+            f.properties?.province_name;
+          return p === province;
+        })
+        .map(f => getZoneName(f));
+    }
+
+    /**
+     * Retourne la classe CSS pour le statut
+     */
+    function getStatutClass(statut) {
+      const statutLower = (statut || '').toLowerCase();
+      if (statutLower.includes('en cours')) return 'badge-en-cours';
+      if (statutLower.includes('terminé') || statutLower.includes('résolu')) return 'badge-termine';
+      if (statutLower.includes('planifié')) return 'badge-planifie';
+      if (statutLower.includes('critique')) return 'badge-danger';
+      if (statutLower.includes('urgent')) return 'badge-warning';
+      return 'badge-info';
+    }
+
+    /**
+     * Formate le montant en devise
+     */
+    function formatMoney(montant, devise = 'USD') {
+      if (!montant && montant !== 0) return 'Non spécifié';
+      return new Intl.NumberFormat('fr-FR').format(montant) + ' ' + devise;
+    }
+
+    /**
+     * Formate la date
+     */
+    function formatDate(date) {
+      if (!date) return 'Non spécifiée';
+      return new Date(date).toLocaleDateString('fr-FR');
+    }
+
+    /**
+     * Affiche les détails d'un ouvrage dans la sidebar droite
+     */
+    function displayOuvrageDetails(ouvrage) {
+      const container = document.getElementById('ouvrage-details-container');
+      const style = getMarkerStyle(ouvrage.type);
+      const statutClass = getStatutClass(ouvrage.statut);
+
+      // Formater les coordonnées
+      const latFormatted = ouvrage.latitude.toFixed(4);
+      const lngFormatted = ouvrage.longitude.toFixed(4);
+
+      // Badge de priorité
+      const prioriteClass = ouvrage.priorite === 'HAUTE' || ouvrage.priorite === 'URGENTE' ? 'badge-danger' :
+        ouvrage.priorite === 'MOYENNE' ? 'badge-warning' : 'badge-info';
+
+      // Section bénéficiaires
+      const beneficiairesSection = ouvrage.beneficiaires ? `
+        <div class="ouvrage-detail-section">
+          <div class="ouvrage-detail-section-title">Bénéficiaires</div>
+          <div class="ouvrage-detail-row">
+            <span class="ouvrage-detail-label">Total</span>
+            <span class="ouvrage-detail-value">${ouvrage.beneficiaires.toLocaleString('fr-FR')} personnes</span>
+          </div>
+          ${ouvrage.femmes ? `
+          <div class="ouvrage-detail-row">
+            <span class="ouvrage-detail-label">Femmes</span>
+            <span class="ouvrage-detail-value">${ouvrage.femmes.toLocaleString('fr-FR')} (${Math.round(ouvrage.femmes / ouvrage.beneficiaires * 100)}%)</span>
+          </div>` : ''}
+          ${ouvrage.enfants ? `
+          <div class="ouvrage-detail-row">
+            <span class="ouvrage-detail-label">Enfants</span>
+            <span class="ouvrage-detail-value">${ouvrage.enfants.toLocaleString('fr-FR')} (${Math.round(ouvrage.enfants / ouvrage.beneficiaires * 100)}%)</span>
+          </div>` : ''}
+        </div>
+      ` : '';
+
+      // Section matériel
+      const materielSection = ouvrage.materiel ? `
+        <div class="ouvrage-detail-section">
+          <div class="ouvrage-detail-section-title">Matériel</div>
+          ${ouvrage.materiel.map(m => `
+            <div class="ouvrage-detail-row">
+              <span class="ouvrage-detail-label">${m.item}</span>
+              <span class="ouvrage-detail-value">${m.quantite} ${m.unite || ''} ${m.distribue ? `(distribué: ${m.distribue})` : ''} ${m.utilise ? `(utilisé: ${m.utilise})` : ''}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
+      // Section phases/avancement
+      const phasesSection = ouvrage.phases ? `
+        <div class="ouvrage-detail-section">
+          <div class="ouvrage-detail-section-title">Phases du projet</div>
+          ${ouvrage.phases.map(p => `
+            <div style="margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                <span style="font-weight: 500;">${p.nom}</span>
+                <span>${p.avancement}%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${p.avancement}%"></div>
+              </div>
+              <div style="font-size: 11px; color: #718096; margin-top: 2px;">
+                ${p.debut ? formatDate(p.debut) : ''} - ${p.fin ? formatDate(p.fin) : p.finPrevue ? formatDate(p.finPrevue) : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
+      // Section documents
+      const documentsSection = ouvrage.documents ? `
+        <div class="ouvrage-detail-section">
+          <div class="ouvrage-detail-section-title">Documents</div>
+          <ul class="documents-list">
+            ${ouvrage.documents.map(d => `
+              <li>
+                <span>📄</span>
+                <span>${d.nom} (${d.taille})</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      ` : '';
+
+      // Section interventions
+      const interventionsSection = ouvrage.interventions ? `
+        <div class="ouvrage-detail-section">
+          <div class="ouvrage-detail-section-title">Interventions</div>
+          ${ouvrage.interventions.map(i => `
+            <div class="intervention-item">
+              <div class="intervention-date">${formatDate(i.date)} - ${i.type}</div>
+              <div>${i.description}</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
+      // Section équipe/personnel
+      const equipeSection = ouvrage.equipe || ouvrage.personnelPrevu ? `
+        <div class="ouvrage-detail-section">
+          <div class="ouvrage-detail-section-title">Équipe</div>
+          ${ouvrage.equipe ? ouvrage.equipe.map(p => `
+            <div class="contact-item">
+              <div class="contact-name">${p.nom}</div>
+              <div class="contact-role">${p.role}</div>
+            </div>
+          `).join('') : ''}
+          ${ouvrage.personnelPrevu ? ouvrage.personnelPrevu.map(p => `
+            <div class="contact-item">
+              <div class="contact-name">${p.poste}</div>
+              <div class="contact-role">${p.quantite} personnes</div>
+            </div>
+          `).join('') : ''}
+        </div>
+      ` : '';
+
+      // Section défis
+      const defisSection = ouvrage.defis ? `
+        <div class="ouvrage-detail-section">
+          <div class="ouvrage-detail-section-title">Défis</div>
+          <ul style="list-style-type: disc; padding-left: 20px;">
+            ${ouvrage.defis.map(d => `<li style="margin-bottom: 5px;">${d}</li>`).join('')}
+          </ul>
+        </div>
+      ` : '';
+
+      // Section contact
+      const contactSection = ouvrage.responsable ? `
+        <div class="ouvrage-detail-section">
+          <div class="ouvrage-detail-section-title">Contact</div>
+          <div class="contact-item">
+            <div class="contact-name">${ouvrage.responsable}</div>
+            <div class="contact-role">${ouvrage.partenaire || 'Responsable'}</div>
+            ${ouvrage.telephone ? `<div>📞 ${ouvrage.telephone}</div>` : ''}
+            ${ouvrage.email ? `<div>✉️ ${ouvrage.email}</div>` : ''}
+          </div>
+        </div>
+      ` : '';
+
+      const html = `
+        <div class="ouvrage-detail-card">
+          <div class="ouvrage-detail-header">
+            <span class="ouvrage-detail-icon" style="color: ${style.color}">${style.icon}</span>
+            <span class="ouvrage-detail-title">${ouvrage.site}</span>
+          </div>
+
+          <div class="ouvrage-detail-section">
+            <div class="ouvrage-detail-section-title">Informations générales</div>
+            <div class="ouvrage-detail-row">
+              <span class="ouvrage-detail-label">Type</span>
+              <span class="ouvrage-detail-value">${style.label}</span>
+            </div>
+            <div class="ouvrage-detail-row">
+              <span class="ouvrage-detail-label">Statut</span>
+              <span class="ouvrage-detail-value">
+                <span class="ouvrage-detail-badge ${statutClass}">${ouvrage.statut}</span>
+              </span>
+            </div>
+            <div class="ouvrage-detail-row">
+              <span class="ouvrage-detail-label">Priorité</span>
+              <span class="ouvrage-detail-value">
+                <span class="ouvrage-detail-badge ${prioriteClass}">${ouvrage.priorite}</span>
+              </span>
+            </div>
+            ${ouvrage.avancement !== undefined ? `
+            <div class="ouvrage-detail-row">
+              <span class="ouvrage-detail-label">Avancement</span>
+              <span class="ouvrage-detail-value">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span>${ouvrage.avancement}%</span>
+                  <div class="progress-bar" style="flex: 1;">
+                    <div class="progress-fill" style="width: ${ouvrage.avancement}%"></div>
+                  </div>
+                </div>
+              </span>
+            </div>
+            ` : ''}
+            <div class="ouvrage-detail-row">
+              <span class="ouvrage-detail-label">Province</span>
+              <span class="ouvrage-detail-value">${ouvrage.province}</span>
+            </div>
+            <div class="ouvrage-detail-row">
+              <span class="ouvrage-detail-label">Territoire</span>
+              <span class="ouvrage-detail-value">${ouvrage.territoire || ouvrage.zone}</span>
+            </div>
+          </div>
+
+          <div class="ouvrage-detail-section">
+            <div class="ouvrage-detail-section-title">Localisation</div>
+            <div class="ouvrage-detail-row">
+              <span class="ouvrage-detail-label">Latitude</span>
+              <span class="ouvrage-detail-value coordinates">${latFormatted}</span>
+            </div>
+            <div class="ouvrage-detail-row">
+              <span class="ouvrage-detail-label">Longitude</span>
+              <span class="ouvrage-detail-value coordinates">${lngFormatted}</span>
+            </div>
+          </div>
+
+          ${ouvrage.budget ? `
+            <div class="ouvrage-detail-section">
+              <div class="ouvrage-detail-section-title">Budget</div>
+              <div class="ouvrage-detail-row">
+                <span class="ouvrage-detail-label">Budget total</span>
+                <span class="ouvrage-detail-value">${formatMoney(ouvrage.budget, ouvrage.devise)}</span>
+              </div>
+              ${ouvrage.depenses ? `
+                <div class="ouvrage-detail-row">
+                  <span class="ouvrage-detail-label">Dépenses</span>
+                  <span class="ouvrage-detail-value">${formatMoney(ouvrage.depenses, ouvrage.devise)} (${Math.round(ouvrage.depenses / ouvrage.budget * 100)}%)</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${ouvrage.depenses / ouvrage.budget * 100}%"></div>
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+
+          <div class="ouvrage-detail-section">
+            <div class="ouvrage-detail-section-title">Description</div>
+            <div class="ouvrage-detail-description">
+              ${ouvrage.description}
+            </div>
+          </div>
+
+          ${beneficiairesSection}
+          ${materielSection}
+          ${phasesSection}
+          ${interventionsSection}
+          ${equipeSection}
+          ${contactSection}
+          ${defisSection}
+          ${documentsSection}
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // ============================================
+    // STYLES DES COUCHES
+    // ============================================
+
     function provinceStyle(feature) {
       return {
         color: "#1e293b",
@@ -275,113 +965,45 @@ L.tileLayer(
       };
     }
 
+    // ============================================
+    // GESTION DE L'INTERFACE - SIDEBAR GAUCHE
+    // ============================================
 
-    /* ------------------------------
-    UI Update
-    ------------------------------ */
-
+    /**
+     * Met à jour la boîte d'information
+     */
     function updateInfo(name, extra = '', zones = []) {
-
       let html = `<strong>${name}</strong>
-<p>${extra || 'Province de la République Démocratique du Congo.'}</p>`;
+      <p>${extra || 'Province de la République Démocratique du Congo.'}</p>`;
 
       if (zones.length) {
-
         html += `<h4>Zones de santé (${zones.length})</h4><ul>`;
-
         zones.forEach(z => {
           html += `<li>${z}</li>`;
         });
-
         html += `</ul>`;
       }
 
       infoBox.innerHTML = html;
-
     }
 
-
-    /* ------------------------------
-    Zones data
-    ------------------------------ */
-
-    let zonesData = null;
-
-    function getZonesByProvince(province) {
-
-      if (!zonesData) return [];
-
-      return zonesData.features
-        .filter(f => {
-
-          const p =
-            f.properties?.province ||
-            f.properties?.Province ||
-            f.properties?.ADM1_EN ||
-            f.properties?.province_name;
-
-          return p === province;
-
-        })
-        .map(f => getZoneName(f));
-
-    }
-
-    function populateProvinceFilter(data) {
-
-      const select = document.getElementById("province-filter");
-
-      document
-        .getElementById("province-filter")
-        .addEventListener("change", filterProvinces);
-
-      document
-        .getElementById("clear-province-filter")
-        .addEventListener("click", function () {
-
-          const select = document.getElementById("province-filter");
-
-          Array.from(select.options).forEach(o => o.selected = false);
-
-          filterProvinces();
-
-        });
-      data.features.forEach(feature => {
-
-        const name = getProvinceName(feature);
-
-        const option = document.createElement("option");
-        option.value = name;
-        option.textContent = name;
-
-        select.appendChild(option);
-
-      });
-
-    }
-    /* ------------------------------
-    Show zone labels on map
-    ------------------------------ */
-
+    /**
+     * Affiche les étiquettes des zones sur la carte
+     */
     function showZoneLabels(provinceName) {
-
       zoneLabelLayer.clearLayers();
 
       if (!zonesData) return;
 
       zonesData.features.forEach(feature => {
-
-        const province =
-          feature.properties?.province ||
+        const province = feature.properties?.province ||
           feature.properties?.ADM1_EN ||
           feature.properties?.Province;
 
         if (province !== provinceName) return;
 
         const name = getZoneName(feature);
-
         const layer = L.geoJSON(feature);
-
         const center = layer.getBounds().getCenter();
 
         const label = L.marker(center, {
@@ -394,20 +1016,46 @@ L.tileLayer(
         });
 
         zoneLabelLayer.addLayer(label);
-
       });
-
     }
 
+    /**
+     * Filtre les provinces selon la sélection
+     */
+    function filterProvinces() {
+      const select = document.getElementById("province-filter");
+      const selected = Array.from(select.selectedOptions).map(o => o.value);
 
-    /* ------------------------------
-    Highlight Province
-    ------------------------------ */
+      provinceLayer.clearLayers();
 
-    let provincesGeoJSON;
+      provincesGeoJSON.eachLayer(layer => {
+        const name = getProvinceName(layer.feature);
+        if (selected.length === 0 || selected.includes(name)) {
+          provinceLayer.addLayer(layer);
+        }
+      });
+    }
+
+    /**
+     * Remplit le sélecteur de provinces
+     */
+    function populateProvinceFilter(data) {
+      const select = document.getElementById("province-filter");
+
+      data.features.forEach(feature => {
+        const name = getProvinceName(feature);
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+      });
+    }
+
+    // ============================================
+    // GESTION DES ÉVÉNEMENTS SUR LES PROVINCES
+    // ============================================
 
     function highlightFeature(e) {
-
       const layer = e.target;
       const name = getProvinceName(layer.feature);
 
@@ -418,73 +1066,27 @@ L.tileLayer(
       });
 
       layer.bringToFront();
-
       updateInfo(name, "Clique pour zoomer sur cette province.");
-
     }
 
     function resetHighlight(e) {
-
       provincesGeoJSON.resetStyle(e.target);
-
-      updateInfo(
-        'Sélection',
-        'Survole ou clique sur une province pour voir son nom.'
-      );
-
-    }
-
-    function getMarkerStyle(type) {
-      switch (type) {
-        case "DISTRIBUTION":
-          return { color: "#2563eb", icon: "🚚" };  // Delivery truck
-
-        case "INCIDENT":
-          return { color: "#dc2626", icon: "🚨" };  // Police/emergency light
-
-        case "CONSTRUCTION":
-          return { color: "#16a34a", icon: "🚧" };  // Construction barrier
-
-        case "ECOLE":
-          return { color: "#9333ea", icon: "🎓" };  // Graduation cap
-
-        case "CENTRE DE SANTE":
-          return { color: "#f59e0b", icon: "🏥" };  // Hospital (kept as is)
-
-        case "BATIMENT ADMINISTRATIF":
-          return { color: "#0891b2", icon: "⚖️" };  // Scales of justice / government
-
-        default:
-          return { color: "#333", icon: "📌" };  // Push pin
-      }
+      updateInfo('Sélection', 'Survole ou clique sur une province pour voir son nom.');
     }
 
     function zoomToFeature(e) {
-
       const layer = e.target;
       const provinceName = getProvinceName(layer.feature);
 
       map.fitBounds(layer.getBounds(), { padding: [20, 20] });
 
       const zones = getZonesByProvince(provinceName);
-
-      updateInfo(
-        provinceName,
-        `Nombre de zones : ${zones.length}`,
-        zones
-      );
-
+      // updateInfo(provinceName, `Nombre de zones : ${zones.length}`, zones);
+      updateInfo(provinceName, `Nombre de zones : ${zones.length}`, zones);
       showZoneLabels(provinceName);
-
     }
 
-
-    /* ------------------------------
-    Province Feature
-    ------------------------------ */
-
     function onEachProvince(feature, layer) {
-
       const name = getProvinceName(feature);
 
       layer.bindPopup(`<strong>${name}</strong>`);
@@ -495,8 +1097,8 @@ L.tileLayer(
         click: zoomToFeature
       });
 
+      // Ajout de l'étiquette
       const center = layer.getBounds().getCenter();
-
       const label = L.marker(center, {
         icon: L.divIcon({
           className: "province-label",
@@ -507,73 +1109,40 @@ L.tileLayer(
       });
 
       provinceLabelLayer.addLayer(label);
-
     }
 
+    // ============================================
+    // CHARGEMENT DES DONNÉES
+    // ============================================
 
-    function filterProvinces() {
-
-      const select = document.getElementById("province-filter");
-
-      const selected = Array.from(select.selectedOptions)
-        .map(o => o.value);
-
-      provinceLayer.clearLayers();
-
-      provincesGeoJSON.eachLayer(layer => {
-
-        const name = getProvinceName(layer.feature);
-
-        if (selected.length === 0 || selected.includes(name)) {
-          provinceLayer.addLayer(layer);
-        }
-
-      });
-
-    }
-    /* ------------------------------
-    Load Provinces
-    ------------------------------ */
-
+    // Chargement des provinces
     fetch('./api/provinces')
-
       .then(res => {
         if (!res.ok) throw new Error("Erreur chargement provinces");
         return res.json();
       })
-
       .then(data => {
-
         provincesGeoJSON = L.geoJSON(data, {
           style: provinceStyle,
           onEachFeature: onEachProvince
         });
+
         populateProvinceFilter(data);
         provinceLayer.addLayer(provincesGeoJSON);
-
         map.fitBounds(provincesGeoJSON.getBounds(), { padding: [10, 10] });
-
       })
-
       .catch(err => {
         console.error(err);
         updateInfo("Erreur", "Impossible de charger les provinces.");
       });
 
-
-    /* ------------------------------
-    Load Health Zones
-    ------------------------------ */
-
+    // Chargement des zones de santé
     fetch('./api/health_zones')
-
       .then(res => {
         if (!res.ok) throw new Error("Erreur chargement zones");
         return res.json();
       })
-
       .then(data => {
-
         zonesData = data;
 
         const zones = L.geoJSON(data, {
@@ -584,89 +1153,107 @@ L.tileLayer(
         });
 
         zoneLayer.addLayer(zones);
-
       })
-
       .catch(err => {
         console.error(err);
       });
+fetch('./api/ouvrages')
+.then(res => {
+  if (!res.ok) throw new Error("Erreur chargement ouvrages");
+  return res.json();
+})
+.then(data => {
 
+  allOuvrages = data;
 
-    /* ------------------------------
-    Sidebar Layer Toggle
-    ------------------------------ */
+  allOuvrages.forEach(p => {
 
-    document.getElementById("toggle-provinces")
-      .addEventListener("change", function () {
+    const style = getMarkerStyle(p.type);
 
-        if (this.checked) {
-          map.addLayer(provinceLayer);
-        } else {
-          map.removeLayer(provinceLayer);
-        }
-
-      });
-
-    document.getElementById("toggle-zones")
-      .addEventListener("change", function () {
-
-        if (this.checked) {
-          map.addLayer(zoneLayer);
-        } else {
-          map.removeLayer(zoneLayer);
-        }
-
-      });
-
-
-    map.on("zoomend", () => {
-      provinceLabelLayer.remove();
-      provinceLabelLayer.addTo(map)
-
+    const marker = L.marker([p.latitude, p.longitude], {
+      icon: L.divIcon({
+        className: "project-marker",
+        html: `<span style="color:${style.color};font-size:18px">${style.icon}</span>`
+      })
     });
 
-    // loadProjectData();
+    marker.bindPopup(`
+      <strong>${p.site}</strong><br>
+      Type: ${style.label}<br>
+      Statut: ${p.statut}<br>
+      Cliquez pour plus de détails
+    `);
 
+    marker.feature = {
+      properties: {
+        id: p.id
+      }
+    };
 
-    fetch("./api/ouvrages")
-      .then(res => res.json())
-      .then(data => {
+    marker.on('click', function () {
+      displayOuvrageDetails(p);
+      selectedOuvrage = p;
+      this.openPopup();
+    });
 
-        data.forEach(p => {
-          const style = getMarkerStyle(p.typeOuvrage);
+    markersMap.set(p.id, marker);
 
-          const marker = L.marker([p.latitude, p.longitude], {
+  });
 
-            icon: L.divIcon({
+  // IMPORTANT : construire la légende après chargement
+  buildLegend();
 
-              className: "project-marker",
+  // afficher les marqueurs
+  updateMarkersVisibility();
 
-              html: `<span style="color:${style.color};font-size:18px">${style.icon}</span>`
+})
+.catch(err => console.error(err));
 
-            })
+    // Construire la légende et afficher les marqueurs
+ 
+    // ============================================
+    // ÉVÉNEMENTS DE L'INTERFACE
+    // ============================================
 
-          });
+    // Filtre des provinces
+    document.getElementById("province-filter").addEventListener("change", filterProvinces);
 
-          marker.bindPopup(`
-        <strong>${p.site}</strong><br>
-        Type: ${p.typeOuvrage}<br>
-        Province: ${p.province}
-        `);
+    // Bouton Clear pour les provinces
+    document.getElementById("clear-province-filter").addEventListener("click", function () {
+      const select = document.getElementById("province-filter");
+      Array.from(select.options).forEach(o => o.selected = false);
+      filterProvinces();
+    });
 
-          projectLayer.addLayer(marker);
+    // Boutons de la légende
+    document.getElementById("select-all-types").addEventListener("click", selectAllTypes);
+    document.getElementById("clear-all-types").addEventListener("click", clearAllTypes);
 
-        });
+    // Toggle provinces
+    document.getElementById("toggle-provinces").addEventListener("change", function () {
+      if (this.checked) {
+        map.addLayer(provinceLayer);
+      } else {
+        map.removeLayer(provinceLayer);
+      }
+    });
 
-      });
-    /* ------------------------------
-    Layer Order
-    ------------------------------ */
+    // Toggle zones
+    document.getElementById("toggle-zones").addEventListener("change", function () {
+      if (this.checked) {
+        map.addLayer(zoneLayer);
+      } else {
+        map.removeLayer(zoneLayer);
+      }
+    });
 
-    // zoneLayer.bringToFront();
-    // provinceLayer.bringToBack();
+    // Gestion des étiquettes au zoom
+    map.on("zoomend", () => {
+      provinceLabelLayer.remove();
+      provinceLabelLayer.addTo(map);
+    });
 
   </script>
-
 </body>
 
 </html>
