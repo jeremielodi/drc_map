@@ -13,324 +13,6 @@
   <!-- Leaflet JavaScript -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <style>
-    /* Styles supplémentaires */
-    .layout {
-      display: grid;
-      grid-template-columns: 300px 1fr 300px;
-      height: 100vh;
-      gap: 10px;
-      padding: 10px;
-    }
-
-    .sidebar {
-      background: white;
-      border-radius: 8px;
-      padding: 15px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      overflow-y: auto;
-    }
-
-    .sidebar-right {
-      background: white;
-      border-radius: 8px;
-      padding: 15px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      overflow-y: auto;
-    }
-
-    .map-wrapper {
-      position: relative;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    #map {
-      height: 100%;
-      width: 100%;
-    }
-
-    /* Styles pour la légende filtrable */
-    .legend {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      padding: 8px 10px;
-      margin-bottom: 5px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: 2px solid transparent;
-    }
-
-    .legend-item:hover {
-      background-color: #f7fafc;
-    }
-
-    .legend-item.active {
-      background-color: #ebf8ff;
-      border-color: #4299e1;
-    }
-
-    .legend-item.disabled {
-      opacity: 0.4;
-      background-color: #f1f5f9;
-      cursor: not-allowed;
-    }
-
-    .legend-icon {
-      font-size: 18px;
-      margin-right: 10px;
-      width: 24px;
-      text-align: center;
-    }
-
-    .legend-label {
-      flex: 1;
-      font-size: 14px;
-    }
-
-    .legend-count {
-      background: #e2e8f0;
-      padding: 2px 6px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      color: #4a5568;
-    }
-
-    .legend-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .legend-actions {
-      display: flex;
-      gap: 5px;
-    }
-
-    .legend-btn {
-      padding: 4px 8px;
-      font-size: 11px;
-      border: 1px solid #e2e8f0;
-      background: white;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .legend-btn:hover {
-      background: #f7fafc;
-    }
-
-    /* Styles pour les détails de l'ouvrage */
-    .ouvrage-detail-card {
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 20px;
-      background: #f8fafc;
-    }
-
-    .ouvrage-detail-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid #e2e8f0;
-    }
-
-    .ouvrage-detail-icon {
-      font-size: 32px;
-    }
-
-    .ouvrage-detail-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: #1e293b;
-    }
-
-    .ouvrage-detail-section {
-      margin-bottom: 20px;
-    }
-
-    .ouvrage-detail-section-title {
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #64748b;
-      margin-bottom: 10px;
-      font-weight: 600;
-    }
-
-    .ouvrage-detail-row {
-      display: flex;
-      margin-bottom: 12px;
-      padding: 8px;
-      background: white;
-      border-radius: 6px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .ouvrage-detail-label {
-      width: 120px;
-      font-weight: 500;
-      color: #475569;
-    }
-
-    .ouvrage-detail-value {
-      flex: 1;
-      color: #0f172a;
-    }
-
-    .ouvrage-detail-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .badge-success {
-      background: #c6f6d5;
-      color: #22543d;
-    }
-
-    .badge-warning {
-      background: #feebc8;
-      color: #744210;
-    }
-
-    .badge-danger {
-      background: #fed7d7;
-      color: #742a2a;
-    }
-
-    .badge-info {
-      background: #bee3f8;
-      color: #2c5282;
-    }
-
-    .badge-en-cours {
-      background: #fefcbf;
-      color: #744210;
-    }
-
-    .badge-termine {
-      background: #c6f6d5;
-      color: #22543d;
-    }
-
-    .badge-planifie {
-      background: #e9d8fd;
-      color: #553c9a;
-    }
-
-    .progress-bar {
-      width: 100%;
-      height: 8px;
-      background: #e2e8f0;
-      border-radius: 4px;
-      overflow: hidden;
-      margin-top: 5px;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: #4299e1;
-      border-radius: 4px;
-    }
-
-    .coordinates {
-      font-family: monospace;
-      background: #f1f5f9;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-
-    .no-selection {
-      text-align: center;
-      color: #94a3b8;
-      padding: 40px 20px;
-      background: #f8fafc;
-      border-radius: 8px;
-      border: 2px dashed #cbd5e1;
-    }
-
-    .no-selection-icon {
-      font-size: 48px;
-      margin-bottom: 15px;
-      opacity: 0.5;
-    }
-
-    .documents-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .documents-list li {
-      padding: 8px;
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 4px;
-      margin-bottom: 5px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .contact-item {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 4px;
-      padding: 10px;
-      margin-bottom: 8px;
-    }
-
-    .contact-name {
-      font-weight: 600;
-      color: #2d3748;
-    }
-
-    .contact-role {
-      font-size: 12px;
-      color: #718096;
-    }
-
-    /* Stats rapides */
-    .quick-stats {
-      background: #f8fafc;
-      border-radius: 6px;
-      padding: 10px;
-      margin-top: 10px;
-      font-size: 12px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 5px;
-    }
-
-    .stat-label {
-      color: #64748b;
-    }
-
-    .stat-value {
-      font-weight: 600;
-      color: #2d3748;
-    }
-  </style>
 </head>
 
 <body>
@@ -609,6 +291,38 @@
       }
       updateMarkersVisibility();
     }
+
+    
+    function refreshZoneLabels() {
+
+  zoneLabelLayer.clearLayers();
+
+  const zonesVisible = document.getElementById("toggle-zones").checked;
+  if (!zonesVisible) return;
+
+  if (!zonesData) return;
+
+  zonesData.features.forEach(feature => {
+
+    const name = getZoneName(feature);
+
+    const layer = L.geoJSON(feature);
+    const center = layer.getBounds().getCenter();
+
+    const label = L.marker(center, {
+      icon: L.divIcon({
+        className: "zone-label",
+        html: name,
+        iconSize: [120, 20]
+      }),
+      interactive: false
+    });
+
+    zoneLabelLayer.addLayer(label);
+
+  });
+
+}
 
     /**
      * Active tous les types
@@ -1146,71 +860,96 @@
         zonesData = data;
 
         const zones = L.geoJSON(data, {
+
           style: zoneStyle,
+
           onEachFeature: (feature, layer) => {
-            layer.bindPopup(`<strong>${getZoneName(feature)}</strong>`);
+
+            const name = getZoneName(feature);
+
+            layer.bindPopup(`<strong>${name}</strong>`);
+
+            // calcul centre de la zone
+            const center = layer.getBounds().getCenter();
+
+            const label = L.marker(center, {
+
+              icon: L.divIcon({
+                className: "zone-label",
+                html: name,
+                iconSize: [120, 20]
+              }),
+
+              interactive: false
+
+            });
+
+            zoneLabelLayer.addLayer(label);
+
           }
+
         });
 
         zoneLayer.addLayer(zones);
+
       })
       .catch(err => {
         console.error(err);
       });
-fetch('./api/ouvrages')
-.then(res => {
-  if (!res.ok) throw new Error("Erreur chargement ouvrages");
-  return res.json();
-})
-.then(data => {
-
-  allOuvrages = data;
-
-  allOuvrages.forEach(p => {
-
-    const style = getMarkerStyle(p.type);
-
-    const marker = L.marker([p.latitude, p.longitude], {
-      icon: L.divIcon({
-        className: "project-marker",
-        html: `<span style="color:${style.color};font-size:18px">${style.icon}</span>`
+    fetch('./api/ouvrages')
+      .then(res => {
+        if (!res.ok) throw new Error("Erreur chargement ouvrages");
+        return res.json();
       })
-    });
+      .then(data => {
 
-    marker.bindPopup(`
+        allOuvrages = data;
+
+        allOuvrages.forEach(p => {
+
+          const style = getMarkerStyle(p.type);
+
+          const marker = L.marker([p.latitude, p.longitude], {
+            icon: L.divIcon({
+              className: "project-marker",
+              html: `<span style="color:${style.color};font-size:18px">${style.icon}</span>`
+            })
+          });
+
+          marker.bindPopup(`
       <strong>${p.site}</strong><br>
       Type: ${style.label}<br>
       Statut: ${p.statut}<br>
       Cliquez pour plus de détails
     `);
 
-    marker.feature = {
-      properties: {
-        id: p.id
-      }
-    };
+          marker.feature = {
+            properties: {
+              id: p.id
+            }
+          };
 
-    marker.on('click', function () {
-      displayOuvrageDetails(p);
-      selectedOuvrage = p;
-      this.openPopup();
-    });
+          marker.on('click', function () {
+            displayOuvrageDetails(p);
+            selectedOuvrage = p;
+            this.openPopup();
+          });
 
-    markersMap.set(p.id, marker);
+          markersMap.set(p.id, marker);
 
-  });
+        });
 
-  // IMPORTANT : construire la légende après chargement
-  buildLegend();
+        // IMPORTANT : construire la légende après chargement
+        buildLegend();
 
-  // afficher les marqueurs
-  updateMarkersVisibility();
+        // afficher les marqueurs
+        updateMarkersVisibility();
 
-})
-.catch(err => console.error(err));
+      })
+      .catch(err => console.error(err));
 
     // Construire la légende et afficher les marqueurs
- 
+
     // ============================================
     // ÉVÉNEMENTS DE L'INTERFACE
     // ============================================
@@ -1239,20 +978,39 @@ fetch('./api/ouvrages')
     });
 
     // Toggle zones
-    document.getElementById("toggle-zones").addEventListener("change", function () {
-      if (this.checked) {
-        map.addLayer(zoneLayer);
-      } else {
-        map.removeLayer(zoneLayer);
-      }
-    });
+document.getElementById("toggle-zones").addEventListener("change", function () {
+
+  if (this.checked) {
+
+    map.addLayer(zoneLayer);
+
+    refreshZoneLabels();
+    map.addLayer(zoneLabelLayer);
+
+  } else {
+
+    map.removeLayer(zoneLayer);
+
+    zoneLabelLayer.clearLayers();
+    map.removeLayer(zoneLabelLayer);
+
+  }
+
+});
 
     // Gestion des étiquettes au zoom
     map.on("zoomend", () => {
+
+      const zonesVisible = document.getElementById("toggle-zones").checked;
+
       provinceLabelLayer.remove();
       provinceLabelLayer.addTo(map);
-    });
 
+      if (!zonesVisible) return;
+
+      refreshZoneLabels();
+
+    });
   </script>
 </body>
 
