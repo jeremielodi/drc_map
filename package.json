@@ -1,18 +1,37 @@
 {
-  "name": "rdc-leaflet-node-app-full",
-  "version": "1.1.0",
-  "description": "Application Node.js simple qui expose un GeoJSON des 26 provinces de la RDC et une page HTML Leaflet.",
+  "name": "rdc-map-app-complete",
+  "version": "1.0.0",
+  "description": "Application complète avec backend Express et frontend Vue.js pour la carte de la RDC",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "server": "nodemon server.js",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "cd client && npm run build",
+    "install-client": "cd client && npm install",
+    "postinstall": "npm run install-client"
   },
   "keywords": [
     "nodejs",
+    "express",
+    "vuejs",
     "leaflet",
     "geojson",
     "rdc",
     "congo"
   ],
   "author": "OpenAI",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0",
+    "compression": "^1.7.4",
+    "helmet": "^7.1.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "nodemon": "^3.0.1"
+  }
 }

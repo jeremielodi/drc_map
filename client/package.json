@@ -1,7 +1,8 @@
 {
-  "name": "rdc-map-dashboard",
+  "name": "rdc-map-client",
   "version": "1.0.0",
   "private": true,
+  "description": "Client Vue.js pour la carte des provinces de la RDC",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,11 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.4.0",
-    "leaflet": "^1.9.4"
+    "leaflet": "^1.9.4",
+    "vue": "^3.4.0"
   },
   "devDependencies": {
-    "vite": "^5.0.0",
-    "@vitejs/plugin-vue": "^5.0.0"
+    "@types/leaflet": "^1.9.8",
+    "@types/node": "^20.10.0",
+    "@vitejs/plugin-vue": "^4.5.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0"
   }
 }

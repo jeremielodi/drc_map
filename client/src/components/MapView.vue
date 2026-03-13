@@ -1,142 +1,85 @@
-
 <template>
-<div id="map"></div>
+  <section class="map-wrapper">
+    <div id="map"></div>
+    <!-- <div v-if="zonesLoading" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Chargement des zones...</div>
+    </div> -->
+  </section>
 </template>
 
-<script setup>
-
+<script setup lang="ts">
 import { onMounted, watch } from 'vue'
-import L from 'leaflet'
+import type { Ouvrage } from '@/types'
 
-const props = defineProps({
-activeTypes:Array,
-selectedProvinces:Array
+const props = defineProps<{
+  selectedOuvrage: Ouvrage | null
+  showProvinces: boolean
+  showZones: boolean
+  zonesLoading: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'mapInit', mapId: string): void
+  (e: 'ouvrageSelected', ouvrage: Ouvrage): void
+  (e: 'provinceSelected', province: string): void
+}>()
+
+onMounted(() => {
+  emit('mapInit', 'map')
 })
 
-const emit = defineEmits(["selectProject","provincesLoaded"])
-
-let map
-let provinceLayer = L.layerGroup()
-let zoneLayer = L.layerGroup()
-let projectLayer = L.layerGroup()
-
-let provincesData=null
-let zonesData=null
-let projects=[]
-
-function getProvinceName(f){
-return f.properties?.name ||
-f.properties?.NAME_1 ||
-f.properties?.ADM1_EN ||
-"Province"
-}
-
-function getZoneName(f){
-return f.properties?.name ||
-f.properties?.ADM2_EN ||
-"Zone"
-}
-
-function getMarkerStyle(type){
-
-const styles={
-DISTRIBUTION:{icon:"🚚",color:"#2563eb"},
-INCIDENT:{icon:"🚨",color:"#dc2626"},
-CONSTRUCTION:{icon:"🚧",color:"#16a34a"},
-ECOLE:{icon:"🎓",color:"#9333ea"},
-"CENTRE DE SANTE":{icon:"🏥",color:"#f59e0b"},
-"BATIMENT ADMINISTRATIF":{icon:"🏢",color:"#0891b2"}
-}
-
-return styles[type]||{icon:"📍",color:"#333"}
-
-}
-
-function refreshProjects(){
-
-projectLayer.clearLayers()
-
-projects.forEach(p=>{
-
-if(props.activeTypes.length && !props.activeTypes.includes(p.type)) return
-if(props.selectedProvinces.length && !props.selectedProvinces.includes(p.province)) return
-
-const style=getMarkerStyle(p.type)
-
-const marker=L.marker([p.latitude,p.longitude],{
-icon:L.divIcon({
-className:"project-marker",
-html:`<span style="font-size:18px;color:${style.color}">${style.icon}</span>`
+// Surveiller les changements de selectedOuvrage pour éventuellement ouvrir la popup
+watch(() => props.selectedOuvrage, (newOuvrage) => {
+  if (newOuvrage) {
+    console.log('Ouvrage sélectionné dans MapView:', newOuvrage.site)
+  }
 })
-})
-
-marker.on("click",()=>emit("selectProject",p))
-
-projectLayer.addLayer(marker)
-
-})
-
-}
-
-watch(()=>props.activeTypes,refreshProjects)
-watch(()=>props.selectedProvinces,refreshProjects)
-
-onMounted(async()=>{
-
-map=L.map("map").setView([-4,22],5)
-
-L.tileLayer(
-"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-{attribution:"© OpenStreetMap"}
-).addTo(map)
-
-provinceLayer.addTo(map)
-zoneLayer.addTo(map)
-projectLayer.addTo(map)
-
-// provinces
-const p=await fetch("/api/provinces")
-if(p.ok){
-
-provincesData=await p.json()
-
-const list=[]
-
-L.geoJSON(provincesData,{
-style:{color:"#1e293b",weight:2,fillOpacity:0.2},
-onEachFeature:(f,l)=>{
-const name=getProvinceName(f)
-list.push(name)
-l.bindPopup(name)
-}
-}).addTo(provinceLayer)
-
-emit("provincesLoaded",list)
-
-}
-
-// zones
-const z=await fetch("/api/health_zones")
-if(z.ok){
-
-zonesData=await z.json()
-
-L.geoJSON(zonesData,{
-style:{color:"#065f46",weight:1,fill:false},
-onEachFeature:(f,l)=>{
-l.bindPopup(getZoneName(f))
-}
-}).addTo(zoneLayer)
-
-}
-
-// projects
-const o=await fetch("/api/ouvrages")
-if(o.ok){
-projects=await o.json()
-refreshProjects()
-}
-
-})
-
 </script>
+
+<style scoped>
+.map-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+  border-left: 4px solid #2563eb;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>

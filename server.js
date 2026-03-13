@@ -1,113 +1,164 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+const express = require('express')
+const fs = require('fs')
+const path = require('path')
 
-const PORT = process.env.PORT || 3000;
-const PUBLIC_DIR = path.join(__dirname, 'public');
-const DATA_FILE = path.join(__dirname, 'data', 'rdc-provinces.geojson');
-const HZ_FILE = path.join(__dirname, 'data', 'health-zones.geojson');
-const OUVRAGES_FILE = path.join(__dirname, 'data', 'ouvrages.json');
-function send(res, statusCode, contentType, body) {
-  res.writeHead(statusCode, {
-    'Content-Type': contentType,
-    'Access-Control-Allow-Origin': '*'
-  });
-  res.end(body);
+const app = express()
+const PORT = 3000
+
+app.use(express.json())
+
+/*
+|--------------------------------------------------------------------------
+| Data files
+|--------------------------------------------------------------------------
+*/
+
+const provincesFile = path.join(__dirname, 'data', 'rdc-provinces.geojson')
+const zonesFile = path.join(__dirname, 'data', 'health-zones.geojson')
+const ouvragesFile = path.join(__dirname, 'data', 'ouvrages.json')
+
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'client/dist')));
 }
 
-function sendFile(res, filePath, contentType) {
-  fs.readFile(filePath, (err, content) => {
+/*
+|--------------------------------------------------------------------------
+| Provinces API
+|--------------------------------------------------------------------------
+*/
+
+app.get('/api/provinces', (req, res) => {
+
+  fs.readFile(provincesFile, 'utf8', (err, data) => {
+
     if (err) {
-      send(res, 500, 'text/plain; charset=utf-8', 'Erreur interne du serveur.');
-      return;
+      return res.status(500).json({
+        error: 'Unable to load provinces',
+        innerError: err
+      })
     }
-    send(res, 200, contentType, content);
-  });
-}
 
-function readGeoJson(file, callback) {
-  fs.readFile(file, 'utf8', (err, content) => {
-    if (err) return callback(err);
+    res.json(JSON.parse(data))
 
-    try {
-      const json = JSON.parse(content);
-      callback(null, json);
-    } catch (parseErr) {
-      callback(parseErr);
+  })
+
+})
+
+
+/*
+|--------------------------------------------------------------------------
+| Health Zones API
+|--------------------------------------------------------------------------
+*/
+
+app.get('/api/health_zones', (req, res) => {
+
+  fs.readFile(zonesFile, 'utf8', (err, data) => {
+
+    if (err) {
+      return res.status(500).json({
+        error: 'Unable to load health zones'
+      })
     }
-  });
-}
+    const { province } = req.query;
+    let jsonData = JSON.parse(data);
+    if(province) {
+      jsonData = jsonData.features.filter(d => d.properties.province==province);
+    }
+    res.json(jsonData)
 
-const server = http.createServer((req, res) => {
-  const url = req.url.split('?')[0];
+  })
 
-  if (url === '/api/provinces') {
-    readGeoJson(DATA_FILE, (err, data) => {
-      if (err) {
-        send(res, 500, 'application/json; charset=utf-8', JSON.stringify({
-          error: 'Impossible de lire le GeoJSON.'
-        }));
-        return;
-      }
+})
 
-      send(res, 200, 'application/json; charset=utf-8', JSON.stringify(data));
-    });
-    return;
-  }
 
-    if (url === '/api/ouvrages') {
-    readGeoJson(OUVRAGES_FILE, (err, data) => {
-      if (err) {
-        send(res, 500, 'application/json; charset=utf-8', JSON.stringify({
-          error: 'Impossible de lire le GeoJSON.'
-        }));
-        return;
-      }
+/*
+|--------------------------------------------------------------------------
+| Ouvrages API
+|--------------------------------------------------------------------------
+*/
 
-      send(res, 200, 'application/json; charset=utf-8', JSON.stringify(data));
-    });
-    return;
-  }
+app.get('/api/ouvrages', (req, res) => {
 
-    if (url === '/api/health_zones') {
-    readGeoJson(HZ_FILE, (err, data) => {
-      if (err) {
-        send(res, 500, 'application/json; charset=utf-8', JSON.stringify({
-          error: 'Impossible de lire le GeoJSON.'
-        }));
-        return;
-      }
+  fs.readFile(ouvragesFile, 'utf8', (err, data) => {
 
-      send(res, 200, 'application/json; charset=utf-8', JSON.stringify(data));
-    });
-    return;
-  }
+    if (err) {
+      return res.status(500).json({
+        error: 'Unable to load ouvrages'
+      })
+    }
 
-  if (url === '/api/health') {
-    send(res, 200, 'application/json; charset=utf-8', JSON.stringify({
-      status: 'ok',
-      service: 'rdc-geojson-api'
-    }));
-    return;
-  }
+    res.json(JSON.parse(data))
 
-  if (url === '/' || url === '/index.html') {
-    sendFile(res, path.join(PUBLIC_DIR, 'index.html'), 'text/html; charset=utf-8');
-    return;
-  }
+  })
 
-  if (url === '/styles.css') {
-    sendFile(res, path.join(PUBLIC_DIR, 'styles.css'), 'text/css; charset=utf-8');
-    return;
-  }
+})
 
-  send(res, 404, 'text/plain; charset=utf-8', '404 - Ressource non trouvée');
-});
 
-server.listen(PORT, () => {
-  console.log(`Serveur démarré sur http://localhost:${PORT}`);
-  console.log(`Carte      : http://localhost:${PORT}`);
-  console.log(`API        : http://localhost:${PORT}/api/provinces`);
-  console.log(`API health_zones        : http://localhost:${PORT}/api/health_zones`);
-  console.log(`Health     : http://localhost:${PORT}/api/health`);
-});
+/*
+|--------------------------------------------------------------------------
+| Filtered ouvrages by province
+|--------------------------------------------------------------------------
+*/
+
+app.get('/api/ouvrages/province/:province', (req, res) => {
+
+  const province = req.params.province
+
+  fs.readFile(ouvragesFile, 'utf8', (err, data) => {
+
+    if (err) {
+      return res.status(500).json({ error: 'Unable to load ouvrages' })
+    }
+
+    const ouvrages = JSON.parse(data)
+
+    const filtered = ouvrages.filter(o =>
+      o.province === province
+    )
+
+    res.json(filtered)
+
+  })
+
+})
+
+
+/*
+|--------------------------------------------------------------------------
+| Filter by type
+|--------------------------------------------------------------------------
+*/
+
+app.get('/api/ouvrages/type/:type', (req, res) => {
+
+  const type = req.params.type
+
+  fs.readFile(ouvragesFile, 'utf8', (err, data) => {
+
+    if (err) {
+      return res.status(500).json({ error: 'Unable to load ouvrages' })
+    }
+
+    const ouvrages = JSON.parse(data)
+
+    const filtered = ouvrages.filter(o =>
+      o.type === type
+    )
+
+    res.json(filtered)
+
+  })
+
+})
+
+
+/*
+|--------------------------------------------------------------------------
+| Server start
+|--------------------------------------------------------------------------
+*/
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`)
+})
