@@ -1,11 +1,29 @@
 <template>
   <aside class="sidebar">
+    <h2>Province</h2>
+
     <!-- FILTRE UNIQUE : Contrôle à la fois l'affichage des provinces ET le filtrage des ouvrages -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 16px;">
       <h3 style="margin:0">Filtre Provinces</h3>
       <button class="small-btn" @click="clearProvinceFilter">Clear</button>
     </div>
+  
+    <!-- Barre de recherche -->
+    <div class="search-container">
+      <input 
+        type="text" 
+        v-model="searchQuery" 
+        placeholder="Rechercher une province..." 
+        class="search-input"
+        @input="filterProvincesList"
+      />
+      <span v-if="searchQuery" class="clear-search" @click="clearSearch">✕</span>
+    </div>
 
+    <!-- Compteur de résultats -->
+    <div class="search-results-count" v-if="searchQuery">
+      {{ filteredProvinces.length }} province(s) trouvée(s)
+    </div>
 
     <select 
       id="province-filter" 
@@ -15,11 +33,14 @@
       v-model="selectedProvinces"
       @change="updateProvinceFilter"
     >
-      <option v-for="province in sortedProvinces" :key="province" :value="province">
+      <option v-for="province in filteredProvinces" :key="province" :value="province">
         {{ province }}
         <span v-if="provinceStats[province]" class="province-count">
           ({{ provinceStats[province].actifs }}/{{ provinceStats[province].total }})
         </span>
+      </option>
+      <option v-if="filteredProvinces.length === 0" disabled class="no-results">
+        Aucune province trouvée
       </option>
     </select>
 
@@ -113,7 +134,7 @@ import type { TypeConfig, Ouvrage } from '@/types'
 const props = defineProps<{
   selectedProvince: string | null
   provinces: string[]
-  provinceVisualFilter: string[]  // Ce filtre contrôle les deux (affichage provinces + filtrage ouvrages)
+  provinceVisualFilter: string[]
   activeTypes: Set<string>
   typeConfig: Record<string, TypeConfig>
   stats: { total: number; affiches: number; masques: number; filtres?: number }
@@ -136,10 +157,22 @@ const emit = defineEmits<{
 
 // État local pour le filtre unique
 const selectedProvinces = ref<string[]>(props.provinceVisualFilter)
+const searchQuery = ref('')
+const filteredProvincesList = ref<string[]>([])
 
 // Computed properties
 const sortedProvinces = computed(() => {
   return [...props.provinces].sort((a, b) => a.localeCompare(b))
+})
+
+// Provinces filtrées par la recherche
+const filteredProvinces = computed(() => {
+  if (!searchQuery.value) return sortedProvinces.value
+  
+  const query = searchQuery.value.toLowerCase()
+  return sortedProvinces.value.filter(province => 
+    province.toLowerCase().includes(query)
+  )
 })
 
 const displayedZones = computed(() => {
@@ -199,7 +232,6 @@ const getTypeCount = (type: string): number => {
 
 // Gestionnaire unique pour le filtre
 const updateProvinceFilter = () => {
-  // Ce seul événement contrôle à la fois l'affichage des provinces ET le filtrage des ouvrages
   emit('update:province-visual-filter', selectedProvinces.value)
 }
 
@@ -211,6 +243,15 @@ const selectAllProvinces = () => {
 const clearProvinceFilter = () => {
   selectedProvinces.value = []
   emit('clear-province-visual-filter')
+}
+
+// Fonctions de recherche
+const filterProvincesList = () => {
+  // Le computed filteredProvinces s'occupe du filtrage
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
 }
 
 const handleZoneToggle = async (event: Event) => {
@@ -229,7 +270,7 @@ watch(() => props.provinceVisualFilter, (newFilter) => {
   width: 100%;
   margin-top: 6px;
   margin-bottom: 8px;
-  max-height: 150px;
+  min-height: 200px;
 }
 
 .province-filter-select option {
@@ -307,6 +348,56 @@ watch(() => props.provinceVisualFilter, (newFilter) => {
   display: inline-block;
   animation: spin 1s linear infinite;
   margin-left: 5px;
+}
+
+/* Styles pour la recherche */
+.search-container {
+  position: relative;
+  margin: 10px 0;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 30px 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.clear-search {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+.clear-search:hover {
+  color: #475569;
+}
+
+.search-results-count {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 4px;
+  text-align: right;
+}
+
+.no-results {
+  color: #94a3b8;
+  font-style: italic;
+  text-align: center;
+  padding: 10px;
 }
 
 @keyframes spin {

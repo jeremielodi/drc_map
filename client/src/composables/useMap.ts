@@ -53,6 +53,9 @@ export function useMap() {
   const provinceFilter = ref<string[]>([])
 
   const baseMaps = {
+    "Carto Light": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; Carto'
+    }),
     "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }),
@@ -62,9 +65,7 @@ export function useMap() {
     "Topographic": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       attribution: 'Map data: &copy; OpenTopoMap'
     }),
-    "Carto Light": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; Carto'
-    }),
+  
     "Carto Dark": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; Carto'
     })
@@ -133,7 +134,7 @@ export function useMap() {
     map.value = L.map(elementId).setView([-4, 22], 5)
 
     // Add default base layer
-    baseMaps["OpenStreetMap"].addTo(map.value)
+    baseMaps["Carto Light"].addTo(map.value)
 
     // Add layer control
     L.control.layers(baseMaps).addTo(map.value)
