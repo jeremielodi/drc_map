@@ -4,7 +4,7 @@
   "description": "Application complète avec backend Express et frontend Vue.js pour la carte de la RDC",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "NODE_ENV=production node server.js",
     "server": "nodemon server.js",
     "client": "cd client && npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\"",

@@ -1,8 +1,5 @@
 <template>
   <aside class="sidebar">
-    <h2>Province</h2>
-
-
     <!-- FILTRE UNIQUE : Contrôle à la fois l'affichage des provinces ET le filtrage des ouvrages -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 16px;">
       <h3 style="margin:0">Filtre Provinces</h3>

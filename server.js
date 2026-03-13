@@ -17,6 +17,7 @@ const provincesFile = path.join(__dirname, 'data', 'rdc-provinces.geojson')
 const zonesFile = path.join(__dirname, 'data', 'health-zones.geojson')
 const ouvragesFile = path.join(__dirname, 'data', 'ouvrages.json')
 
+console.log(process.env.NODE_ENV);
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'client/dist')));
 }
